@@ -1,0 +1,518 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leave Management System | V1</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f3f6fb;
+    color: #17243b;
+}
+
+.layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 240px;
+    background: #122b55;
+    color: white;
+    padding: 28px 18px;
+    flex-shrink: 0;
+}
+
+.brand {
+    font-size: 23px;
+    font-weight: 750;
+    margin-bottom: 45px;
+    line-height: 1.4;
+}
+
+.brand span {
+    display: block;
+    font-size: 12px;
+    font-weight: 400;
+    color: #b8c9e5;
+}
+
+.nav-item {
+    background: #254a85;
+    padding: 14px;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.sidebar-note {
+    margin-top: 40px;
+    font-size: 12px;
+    color: #b8c9e5;
+    line-height: 1.8;
+}
+
+.main {
+    flex: 1;
+    padding: 32px;
+    min-width: 0;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 26px;
+}
+
+h1 {
+    font-size: 27px;
+    margin: 0 0 7px;
+}
+
+.subtitle {
+    color: #68778d;
+    font-size: 14px;
+}
+
+.version {
+    background: #dbeafe;
+    color: #1d4ed8;
+    border-radius: 20px;
+    padding: 9px 16px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-bottom: 25px;
+}
+
+.stat, .card {
+    background: white;
+    border: 1px solid #e5eaf2;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px #17243b08;
+}
+
+.stat {
+    padding: 20px;
+}
+
+.stat-label {
+    color: #68778d;
+    font-size: 13px;
+}
+
+.stat-number {
+    font-size: 30px;
+    font-weight: 750;
+    margin-top: 10px;
+}
+
+.blue { color: #2563eb; }
+.orange { color: #d97706; }
+.green { color: #059669; }
+
+.card {
+    padding: 26px;
+    margin-bottom: 25px;
+}
+
+.card h2 {
+    font-size: 19px;
+    margin: 0 0 8px;
+}
+
+.card-description {
+    color: #68778d;
+    font-size: 13px;
+    margin-bottom: 24px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.full {
+    grid-column: 1 / -1;
+}
+
+label {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+input, select, textarea {
+    width: 100%;
+    border: 1px solid #d5deeb;
+    border-radius: 8px;
+    padding: 12px 13px;
+    font: inherit;
+    font-size: 14px;
+    background: white;
+    color: #17243b;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: 2px solid #bfdbfe;
+    border-color: #2563eb;
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.days-box {
+    background: #eff6ff;
+    color: #1d4ed8;
+    padding: 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-top: 20px;
+}
+
+.submit-btn {
+    background: #2563eb;
+    color: white;
+    border: 0;
+    border-radius: 8px;
+    padding: 14px 26px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 22px;
+}
+
+.submit-btn:hover {
+    background: #1d4ed8;
+}
+
+.alert {
+    padding: 13px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.alert.success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.alert.error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+th {
+    background: #f1f5f9;
+    text-align: left;
+    color: #475569;
+    padding: 14px;
+}
+
+td {
+    padding: 15px 14px;
+    border-bottom: 1px solid #e8edf4;
+    vertical-align: top;
+}
+
+.pending {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 6px 11px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.empty {
+    text-align: center;
+    padding: 35px;
+    color: #64748b;
+}
+
+.footer {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 12px;
+    padding: 15px;
+}
+
+@media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { padding: 20px; }
+}
+
+@media (max-width: 600px) {
+    .stats, .form-grid {
+        grid-template-columns: 1fr;
+    }
+    .topbar { align-items: flex-start; }
+    h1 { font-size: 22px; }
+    .card { padding: 18px; }
+}
+</style>
+</head>
+
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+    <div class="brand">
+        LeaveFlow
+        <span>Student Leave Management</span>
+    </div>
+
+    <div class="nav-item">📋 Leave Dashboard</div>
+
+    <div class="sidebar-note">
+        Agile Project – Version 1<br>
+        Request Leave Module<br>
+        Register No: 24MIS0329
+    </div>
+</aside>
+
+<main class="main">
+
+    <div class="topbar">
+        <div>
+            <h1>Leave Management System</h1>
+            <div class="subtitle">
+                Manage and track your leave applications
+            </div>
+        </div>
+        <div class="version">V1 · Request Leave</div>
+    </div>
+
+    <section class="stats">
+        <div class="stat">
+            <div class="stat-label">Total Requests</div>
+            <div class="stat-number blue">{{ total_requests }}</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-label">Pending Requests</div>
+            <div class="stat-number orange">{{ pending_requests }}</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-label">Current Module</div>
+            <div class="stat-number green" style="font-size:20px">
+                Apply Leave
+            </div>
+        </div>
+    </section>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert {{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <section class="card">
+        <h2>Apply for Leave</h2>
+        <p class="card-description">
+            Fill in the details below to submit your leave request.
+            All fields are required.
+        </p>
+
+        <form method="POST" id="leaveForm">
+            <div class="form-grid">
+
+                <div class="field">
+                    <label for="student_name">Student Name</label>
+                    <input id="student_name"
+                           name="student_name"
+                           placeholder="Enter your full name"
+                           required>
+                </div>
+
+                <div class="field">
+                    <label for="register_number">Register Number</label>
+                    <input id="register_number"
+                           name="register_number"
+                           placeholder="Example: 24MIS0329"
+                           maxlength="9"
+                           required>
+                </div>
+
+                <div class="field full">
+                    <label for="leave_type">Leave Type</label>
+                    <select id="leave_type" name="leave_type" required>
+                        <option value="">Select leave type</option>
+                        <option value="Medical">Medical Leave</option>
+                        <option value="Personal">Personal Leave</option>
+                        <option value="Family">Family Function</option>
+                        <option value="Emergency">Emergency Leave</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="from_date">From Date</label>
+                    <input type="date"
+                           id="from_date"
+                           name="from_date"
+                           required>
+                </div>
+
+                <div class="field">
+                    <label for="to_date">To Date</label>
+                    <input type="date"
+                           id="to_date"
+                           name="to_date"
+                           required>
+                </div>
+
+                <div class="field full">
+                    <label for="reason">Reason for Leave</label>
+                    <textarea id="reason"
+                              name="reason"
+                              placeholder="Explain why you are requesting leave..."
+                              minlength="5"
+                              required></textarea>
+                </div>
+
+            </div>
+
+            <div class="days-box" id="daysBox">
+                Select From Date and To Date to calculate leave duration.
+            </div>
+
+            <button type="submit" class="submit-btn">
+                Submit Leave Request
+            </button>
+        </form>
+    </section>
+
+    <section class="card">
+        <h2>My Leave Requests</h2>
+        <p class="card-description">
+            View your submitted leave applications and their status.
+        </p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Request ID</th>
+                        <th>Student</th>
+                        <th>Leave Type</th>
+                        <th>From Date</th>
+                        <th>To Date</th>
+                        <th>Days</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                {% for leave in leaves %}
+                    <tr>
+                        <td>#{{ leave.id }}</td>
+                        <td>
+                            <strong>{{ leave.student_name }}</strong><br>
+                            {{ leave.register_number }}
+                        </td>
+                        <td>{{ leave.leave_type }}</td>
+                        <td>{{ leave.from_date }}</td>
+                        <td>{{ leave.to_date }}</td>
+                        <td>{{ leave.days }}</td>
+                        <td>{{ leave.reason }}</td>
+                        <td><span class="pending">{{ leave.status }}</span></td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="empty">
+                            No leave requests yet. Submit your first request above.
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="footer">
+        LeaveFlow | Agile Software Development | Version 1
+    </div>
+
+</main>
+</div>
+
+<script>
+const fromDate = document.getElementById("from_date");
+const toDate = document.getElementById("to_date");
+const daysBox = document.getElementById("daysBox");
+
+function calculateDays() {
+    if (!fromDate.value || !toDate.value) {
+        daysBox.textContent =
+            "Select From Date and To Date to calculate leave duration.";
+        return;
+    }
+
+    const start = new Date(fromDate.value + "T00:00:00");
+    const end = new Date(toDate.value + "T00:00:00");
+
+    const days = Math.round(
+        (end - start) / (1000 * 60 * 60 * 24)
+    ) + 1;
+
+    if (days <= 0) {
+        daysBox.textContent =
+            "Invalid date range: To Date must not be earlier than From Date.";
+        daysBox.style.color = "#dc2626";
+        return;
+    }
+
+    daysBox.style.color = "#1d4ed8";
+    daysBox.textContent =
+        "Total Leave Duration: " + days +
+        (days === 1 ? " day" : " days");
+}
+
+fromDate.addEventListener("change", calculateDays);
+toDate.addEventListener("change", calculateDays);
+
+document.getElementById("leaveForm").addEventListener("submit", function(e) {
+    if (fromDate.value > toDate.value) {
+        e.preventDefault();
+        alert("To Date cannot be earlier than From Date.");
+    }
+});
+</script>
+
+</body>
+</html>
