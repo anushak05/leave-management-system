@@ -1,0 +1,144 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LeaveFlow - Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6fb;
+            margin: 0;
+            color: #17233c;
+        }
+        header {
+            background: #182b56;
+            color: white;
+            padding: 22px 35px;
+        }
+        main {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        .stats {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            flex: 1;
+            min-width: 150px;
+        }
+        .card strong {
+            display: block;
+            font-size: 28px;
+            margin-top: 10px;
+        }
+        .table-wrap {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 13px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th { background: #eef2fa; }
+        .pending { color: #a66b00; font-weight: bold; }
+        .approved { color: #16803c; font-weight: bold; }
+        button {
+            background: #16803c;
+            color: white;
+            border: 0;
+            padding: 9px 16px;
+            border-radius: 7px;
+            cursor: pointer;
+        }
+        a { color: #345bdc; }
+        .message {
+            padding: 12px;
+            margin-bottom: 15px;
+            background: #e6f7ed;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h2>LeaveFlow | Admin Dashboard - V2</h2>
+    </header>
+
+    <main>
+        <p><a href="{{ url_for('home') }}">← Student Leave Form</a></p>
+
+        <div class="stats">
+            <div class="card">Total Requests<strong>{{ total_requests }}</strong></div>
+            <div class="card">Pending<strong>{{ pending_requests }}</strong></div>
+            <div class="card">Approved<strong>{{ approved_requests }}</strong></div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="message">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <div class="table-wrap">
+            <h3>Leave Requests</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Student</th>
+                        <th>Register No.</th>
+                        <th>Leave Type</th>
+                        <th>Dates</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for leave in leaves %}
+                    <tr>
+                        <td>{{ leave.id }}</td>
+                        <td>{{ leave.student_name }}</td>
+                        <td>{{ leave.register_number }}</td>
+                        <td>{{ leave.leave_type }}</td>
+                        <td>{{ leave.from_date }} to {{ leave.to_date }}</td>
+                        <td>{{ leave.reason }}</td>
+                        <td class="{{ leave.status|lower }}">{{ leave.status }}</td>
+                        <td>
+                            {% if leave.status == 'Pending' %}
+                            <form method="POST"
+                                  action="{{ url_for('approve_leave', leave_id=leave.id) }}">
+                                <button type="submit">Approve</button>
+                            </form>
+                            {% else %}
+                                Approved
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8">No leave requests yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</body>
+</html>

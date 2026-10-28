@@ -1,107 +1,201 @@
 
-from flask import Flask, request, render_template_string
+from flask import Flask, render_template, request, redirect, url_for, flash
+from datetime import datetime
+import sqlite3
+import os
+import re
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "v2-classroom-demo")
 
-leaves = []
+DATABASE = os.path.join(os.path.dirname(__file__), "leaves.db")
 
-HTML = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Leave Management System - V1</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #eef3f9;
-            padding: 40px;
-        }
-        .container {
-            max-width: 650px;
-            margin: auto;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px #ddd;
-        }
-        h1 { color: #234c8a; }
-        input, textarea, button {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            box-sizing: border-box;
-        }
-        button {
-            background: #2563eb;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        .leave {
-            background: #f1f5f9;
-            padding: 12px;
-            margin-top: 10px;
-            border-radius: 6px;
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <h1>Leave Management System</h1>
-    <p>Version 1 - Request Leave</p>
-    <p>Register Number: 24MIS0329</p>
 
-    <h2>Apply for Leave</h2>
-    <form method="POST" action="/request">
-        <input name="name" placeholder="Student Name" required>
-        <input name="regno" placeholder="Register Number" required>
-        <input type="date" name="date" required>
-        <textarea name="reason" placeholder="Reason for Leave" required></textarea>
-        <button type="submit">Submit Leave Request</button>
-    </form>
+def get_db():
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-    <h2>Leave Requests</h2>
-    {% for leave in leaves %}
-        <div class="leave">
-            <b>{{ leave.name }}</b> ({{ leave.regno }})
-            <p>Date: {{ leave.date }}</p>
-            <p>Reason: {{ leave.reason }}</p>
-            <p>Status: {{ leave.status }}</p>
-        </div>
-    {% else %}
-        <p>No leave requests yet.</p>
-    {% endfor %}
-</div>
-</body>
-</html>
-"""
 
-@app.route("/")
+def initialize_database():
+    with get_db() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS leaves (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_name TEXT NOT NULL,
+                register_number TEXT NOT NULL,
+                from_date TEXT NOT NULL,
+                to_date TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'Pending'
+            )
+        """)
+
+        columns = {
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(leaves)")
+        }
+
+        if "leave_type" not in columns:
+            conn.execute("""
+                ALTER TABLE leaves
+                ADD COLUMN leave_type TEXT DEFAULT 'Personal'
+            """)
+
+        conn.commit()
+
+
+def get_leaves():
+    with get_db() as conn:
+        records = conn.execute(
+            "SELECT * FROM leaves ORDER BY id DESC"
+        ).fetchall()
+
+    leaves = []
+
+    for row in records:
+        leave = dict(row)
+
+        start = datetime.strptime(
+            leave["from_date"], "%Y-%m-%d"
+        ).date()
+
+        end = datetime.strptime(
+            leave["to_date"], "%Y-%m-%d"
+        ).date()
+
+        leave["days"] = (end - start).days + 1
+        leaves.append(leave)
+
+    return leaves
+
+
+@app.route("/", methods=["GET", "POST"])
 def home():
-    return render_template_string(HTML, leaves=leaves)
+    if request.method == "POST":
+        name = request.form.get("student_name", "").strip()
+        regno = request.form.get("register_number", "").strip().upper()
+        leave_type = request.form.get("leave_type", "").strip()
+        from_date = request.form.get("from_date", "")
+        to_date = request.form.get("to_date", "")
+        reason = request.form.get("reason", "").strip()
 
-@app.route("/request", methods=["POST"])
-def request_leave():
-    name = request.form["name"].strip()
-    regno = request.form["regno"].strip()
-    date = request.form["date"]
-    reason = request.form["reason"].strip()
+        if not all([
+            name, regno, leave_type,
+            from_date, to_date, reason
+        ]):
+            flash("Please fill in all required fields.", "error")
 
-    if not name or not regno or not date or not reason:
-        return "All fields are required", 400
+        elif not re.fullmatch(r"\d{2}MIS\d{4}", regno):
+            flash("Enter a valid register number.", "error")
 
-    leaves.append({
-        "id": len(leaves) + 1,
-        "name": name,
-        "regno": regno,
-        "date": date,
-        "reason": reason,
-        "status": "Pending"
-    })
+        elif leave_type not in [
+            "Medical", "Personal", "Family",
+            "Emergency", "Other"
+        ]:
+            flash("Select a valid leave type.", "error")
 
-    return render_template_string(
-        HTML, leaves=leaves
+        else:
+            try:
+                start = datetime.strptime(
+                    from_date, "%Y-%m-%d"
+                ).date()
+
+                end = datetime.strptime(
+                    to_date, "%Y-%m-%d"
+                ).date()
+
+                if end < start:
+                    flash(
+                        "To Date cannot be before From Date.",
+                        "error"
+                    )
+                else:
+                    with get_db() as conn:
+                        conn.execute("""
+                            INSERT INTO leaves
+                            (student_name, register_number,
+                             leave_type, from_date, to_date,
+                             reason, status)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """, (
+                            name, regno, leave_type,
+                            from_date, to_date,
+                            reason, "Pending"
+                        ))
+                        conn.commit()
+
+                    flash(
+                        "Leave request submitted successfully!",
+                        "success"
+                    )
+
+            except ValueError:
+                flash("Please enter valid dates.", "error")
+
+        return redirect(url_for("home"))
+
+    leaves = get_leaves()
+
+    return render_template(
+        "index.html",
+        leaves=leaves,
+        total_requests=len(leaves),
+        pending_requests=sum(
+            1 for leave in leaves
+            if leave["status"] == "Pending"
+        ),
+        approved_requests=sum(
+            1 for leave in leaves
+            if leave["status"] == "Approved"
+        ),
+        version="V2"
     )
 
+
+@app.route("/admin")
+def admin():
+    leaves = get_leaves()
+
+    return render_template(
+        "admin.html",
+        leaves=leaves,
+        total_requests=len(leaves),
+        pending_requests=sum(
+            1 for leave in leaves
+            if leave["status"] == "Pending"
+        ),
+        approved_requests=sum(
+            1 for leave in leaves
+            if leave["status"] == "Approved"
+        )
+    )
+
+
+@app.route("/approve/<int:leave_id>", methods=["POST"])
+def approve_leave(leave_id):
+    with get_db() as conn:
+        cursor = conn.execute("""
+            UPDATE leaves
+            SET status = 'Approved'
+            WHERE id = ? AND status = 'Pending'
+        """, (leave_id,))
+        conn.commit()
+
+    if cursor.rowcount == 1:
+        flash("Leave request approved successfully!", "success")
+    else:
+        flash("Request not found or already processed.", "error")
+
+    return redirect(url_for("admin"))
+
+
+@app.route("/health")
+def health():
+    return {"status": "ok", "version": "v2"}, 200
+
+
+initialize_database()
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5001)
