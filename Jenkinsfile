@@ -18,9 +18,12 @@ pipeline {
         stage('Verify Project') {
             steps {
                 bat '''
-                    python --version
-                    python -m pip install -r requirements.txt
-                    python -c "from app import app; print('Flask V2 application loaded successfully')"
+                    if not exist app.py exit /b 1
+                    if not exist requirements.txt exit /b 1
+                    if not exist Dockerfile exit /b 1
+                    if not exist templates\\index.html exit /b 1
+                    if not exist templates\\admin.html exit /b 1
+                    echo Version 2 project files verified successfully
                 '''
             }
         }
@@ -36,7 +39,7 @@ pipeline {
         stage('Test Docker Image') {
             steps {
                 bat '''
-                    docker image inspect %IMAGE_NAME%:%IMAGE_TAG%
+                    docker run --rm %IMAGE_NAME%:%IMAGE_TAG% python -c "from app import app; assert any(rule.rule == '/admin' for rule in app.url_map.iter_rules()); print('Flask V2 admin route verified successfully')"
                 '''
             }
         }
@@ -69,7 +72,7 @@ pipeline {
         }
 
         always {
-            bat 'docker logout'
+            echo 'Version 2 pipeline execution finished.'
         }
     }
 }
