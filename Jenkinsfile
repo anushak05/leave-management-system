@@ -3,9 +3,11 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'anushak05/leave-management'
-        IMAGE_TAG = 'v2'
-    }
+    IMAGE_NAME = 'anushak05/leave-management'
+    IMAGE_TAG = 'v2'
+    DOCKER_HOST = 'npipe:////./pipe/dockerDesktopLinuxEngine'
+    DOCKER_CONTEXT = 'default'
+}
 
     stages {
 
