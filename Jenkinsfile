@@ -2,15 +2,15 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
     environment {
         IMAGE_NAME = 'anushak05/leave-management'
         IMAGE_TAG = 'v2'
         DOCKER_HOST = 'npipe:////./pipe/dockerDesktopLinuxEngine'
         DOCKER_CONTEXT = 'default'
-    }
-
-    options {
-        skipDefaultCheckout(true)
     }
 
     stages {
@@ -25,6 +25,7 @@ pipeline {
             steps {
                 bat '''
                     @echo off
+
                     if not exist app.py exit /b 1
                     if not exist requirements.txt exit /b 1
                     if not exist Dockerfile exit /b 1
@@ -40,7 +41,9 @@ pipeline {
             steps {
                 bat '''
                     @echo off
+
                     docker build -t %IMAGE_NAME%:%IMAGE_TAG% .
+
                     if errorlevel 1 exit /b 1
 
                     echo Version 2 Docker image built successfully
@@ -52,7 +55,8 @@ pipeline {
             steps {
                 bat '''
                     @echo off
-                    docker run --rm %IMAGE_NAME%:%IMAGE_TAG% python -c "from app import app; assert any(rule.rule == '/admin' for rule in app.url_map.iter_rules()); print('Flask V2 admin route verified successfully')"
+
+                    docker run --rm %IMAGE_NAME%:%IMAGE_TAG% python -c "from app import app; assert any(rule.rule == '/admin' for rule in app.url_map.iter_rules()); assert app.test_client().get('/admin').status_code == 200; print('Flask V2 admin dashboard verified successfully')"
 
                     if errorlevel 1 exit /b 1
 
@@ -71,27 +75,28 @@ pipeline {
                     )
                 ]) {
                     withEnv(['DOCKER_CONFIG=.docker-jenkins']) {
-                        bat '''
-                            @echo off
-                            echo Logging in to Docker Hub...
+                        powershell '''
+                            $ErrorActionPreference = 'Stop'
 
-                            echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                            Write-Host "Logging in to Docker Hub..."
 
-                            if errorlevel 1 (
-                                echo Docker Hub login failed
-                                exit /b 1
-                            )
+                            $env:DOCKER_PASS | docker login `
+                                --username $env:DOCKER_USER `
+                                --password-stdin
 
-                            echo Docker Hub login successful
+                            if ($LASTEXITCODE -ne 0) {
+                                throw "Docker Hub login failed"
+                            }
 
-                            docker push %IMAGE_NAME%:%IMAGE_TAG%
+                            Write-Host "Docker Hub login successful"
 
-                            if errorlevel 1 (
-                                echo Docker image push failed
-                                exit /b 1
-                            )
+                            docker push "${env:IMAGE_NAME}:${env:IMAGE_TAG}"
 
-                            echo Version 2 image pushed successfully
+                            if ($LASTEXITCODE -ne 0) {
+                                throw "Docker image push failed"
+                            }
+
+                            Write-Host "Version 2 image pushed successfully"
                         '''
                     }
                 }
@@ -110,10 +115,13 @@ pipeline {
 
         always {
             withEnv(['DOCKER_CONFIG=.docker-jenkins']) {
-                bat(returnStatus: true, script: '''
-                    @echo off
-                    docker logout >nul 2>&1
-                ''')
+                bat(
+                    returnStatus: true,
+                    script: '''
+                        @echo off
+                        docker logout >nul 2>&1
+                    '''
+                )
             }
 
             dir('.docker-jenkins') {
