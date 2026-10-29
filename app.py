@@ -171,7 +171,6 @@ def admin():
         )
     )
 
-
 @app.route("/approve/<int:leave_id>", methods=["POST"])
 def approve_leave(leave_id):
     with get_db() as conn:
@@ -189,10 +188,29 @@ def approve_leave(leave_id):
 
     return redirect(url_for("admin"))
 
+@app.route("/reject/<int:leave_id>", methods=["POST"])
+def reject_leave(leave_id):
+    conn = sqlite3.connect("leaves.db")
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        UPDATE leaves
+        SET status = 'Rejected'
+        WHERE id = ? AND status = 'Pending'
+        """,
+        (leave_id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for("admin"))
+
 
 @app.route("/health")
 def health():
-    return {"status": "ok", "version": "v2"}, 200
+    return {"status": "ok", "version": "v3"}, 200
 
 
 initialize_database()

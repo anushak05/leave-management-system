@@ -77,7 +77,7 @@
 </head>
 <body>
     <header>
-        <h2>LeaveFlow | Admin Dashboard - V2</h2>
+        <h2>LeaveFlow | Admin Dashboard - V3</h2>
     </header>
 
     <main>
@@ -125,6 +125,14 @@
                             <form method="POST"
                                   action="{{ url_for('approve_leave', leave_id=leave.id) }}">
                                 <button type="submit">Approve</button>
+                            </form>
+                             <form method="POST"
+                                    action="{{ url_for('reject_leave', leave_id=leave.id) }}"
+                                    style="display:inline-block;">
+                                <button type="submit"
+                                            style="background-color:#dc2626; color:white; border:none; padding:8px 14px; border-radius:6px; cursor:pointer;">
+                                        Reject
+                                </button>
                             </form>
                             {% else %}
                                 Approved
